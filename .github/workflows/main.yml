@@ -1,0 +1,46 @@
+name: Build and deploy
+
+on:
+  push:
+    tags:
+      - 'deploy'
+
+jobs:
+  build:
+    env:
+      FOLDER: 'helicopter-simulator'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install yarn
+      uses: DerYeger/yarn-setup-action@v1.0.1
+      with:
+        node-version: 16.x
+
+    - name: Build assets
+      run: yarn
+      
+    - name: Deploy
+      uses: appleboy/scp-action@master
+      env:
+        HOST: ${{ secrets.HOST }}
+        USERNAME: ${{ secrets.USERNAME }}
+        PORT: ${{ secrets.PORT }}
+        KEY: ${{ secrets.SSHKEY }}
+      with:
+        source: "./*"
+        target: "/var/www/${{ env.FOLDER }}-ci-tmp"
+      
+    - name: Cleanup
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSHKEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+          rm -rf /var/www/${{ env.FOLDER }}-ci
+          mkdir /var/www/${{ env.FOLDER }}-ci
+          rsync -av /var/www/${{ env.FOLDER }}-ci-tmp/www/ /var/www/${{ env.FOLDER }}-ci
+          rm -rf /var/www/${{ env.FOLDER }}-ci-tmp
