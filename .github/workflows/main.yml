@@ -29,7 +29,7 @@ jobs:
         PORT: ${{ secrets.PORT }}
         KEY: ${{ secrets.SSHKEY }}
       with:
-        source: "./*"
+        source: "*"
         target: "/var/www/${{ env.FOLDER }}-ci-tmp"
       
     - name: Cleanup
