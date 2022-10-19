@@ -1,0 +1,17 @@
+{
+  "name": "helicopter-simulator",
+  "version": "0.0.1",
+  "main": "bin/index.js",
+  "description": "Multiplayer helicopter simulator",
+  "dependencies": {
+    "bootstrap": "^4.4.1",
+    "express": "^4.15.2",
+    "jquery": "^3.5.0",
+    "nodemon": "^2.0.3",
+    "socket.io": "^1.7.3",
+    "three": "^0.115.0"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}

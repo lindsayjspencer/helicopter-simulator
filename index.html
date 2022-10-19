@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Helicopter simulator</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<script defer src="/jquery/dist/jquery.min.js"></script>
+		<link defer type="text/css" rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+		<link defer rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" integrity="sha256-46qynGAkLSFpVbEBog43gvNhfrOj+BmwXdxFgVK/Kvc=" crossorigin="anonymous">
+		<script defer src="/bootstrap/dist/js/bootstrap.min.js"></script>
+		<script defer src="/tween.umd.js"></script>
+		<script defer src="/three/build/three.min.js"></script>
+	    <script defer src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+		<style>
+            @media only screen and (min-width: 578px) {
+				.open-menu {
+					position: fixed;
+					bottom: 0;
+					right: 0;
+					transition: transform 400ms ease-in-out;
+					transform: translateY(0%);
+				}
+				.open-menu.hide {
+					transition: transform 400ms ease-in-out;
+					transform: translateY(100%);
+				}
+            }
+            @media only screen and (max-width: 577px) {
+	            div.card.left-menu {
+					width: 100vw;
+					max-width: 577px;
+	            }
+	            div.card.country-menu {
+					width: 100vw;
+					max-width: 577px;
+	                bottom: unset;
+	                right: 0;
+					top: 0;
+	                box-shadow: 0px 0px 0px 0px #00000030;
+	                position: fixed;
+	                /* overflow-x: hidden; */
+	                /* height: 100vh; */
+	                transition: transform 400ms ease-in-out, box-shadow 400ms ease-in-out;
+	                transform: translateY(-100vh);
+	            }
+				.open-menu {
+					position: fixed;
+					bottom: 0;
+					left: 0;
+					min-width: 100vw;
+					transition: transform 400ms ease-in-out;
+					transform: translateY(0vh);
+				}
+				.open-menu.hide {
+					transition: transform 400ms ease-in-out;
+					transform: translateY(100vh);
+				}
+            }
+			body {
+				background-color: #cce0ff;
+				color: #000;
+				margin: 0;
+			}
+			a {
+				color: #080;
+                box-shadow: none;
+			}
+            .left-panel-internal a, .left-panel-internal a:focus {
+                box-shadow: none;
+            }
+			canvas { display: block; }
+            .btn-menu {
+                color: var(--primary);
+                transition: all 150ms;
+                box-shadow: none;
+            }
+            .btn-menu:hover {
+                /* color: #ffffff; */
+                background: #eaeaea;
+            }
+			.loading-msg {
+				height: 100vh;
+				width: 100vw;
+				position: fixed;
+				z-index: 1100;
+				opacity: 1;
+				background: white;
+				transition: opacity 200ms ease-in-out;
+			}
+			.loading-msg.hide {
+				opacity: 0;
+			}
+			.loading-text {
+				color: #636363;
+				display: inline-block;
+				text-align: center;
+				padding: 0rem 0rem 0.5rem 0rem;
+			}
+			.loading-msg.initialising .progress {
+				max-height: 0px;
+				padding: 0rem 0rem 0rem 0rem;
+			}
+			.loading-msg.initialising .loading-text {
+				max-height: 0px;
+				transition: all 200ms 100ms ease-in-out;
+				padding: 0rem 0rem 0rem 0rem;
+			}
+			.loading-cog {
+				color: #09abe8;
+				max-height: 0px;
+				overflow: hidden;
+			}
+			.loading-num {
+				max-height: 100px;
+				overflow: hidden;
+			}
+			.loading-msg.initialising .loading-cog {
+				max-height: 100px;
+				transition: all 200ms 300ms ease-in-out;
+			}
+			.loading-msg.initialising .loading-num {
+				max-height: 0px;
+				transition: all  300ms ease-in-out;
+			}
+			.loading-msg .progress {
+				width: 20rem;
+				max-height: 20px;
+				transition: all 200ms ease-in-out;
+				overflow: hidden;
+				/* padding: 0.5rem 0rem 0.5rem 0rem; */
+			}
+			a.btn i {
+				background: #00000010;
+				min-width: 3rem;
+			}
+			.left-panel-internal i::before {
+				vertical-align: sub;
+			}
+			.left-panel-internal i {
+				min-width: 3rem;
+				text-shadow: 2px 2px 2px #0000004d;
+				background: #00000030;
+			}
+            .card.left-menu {
+                min-width: 12rem;
+                bottom: 0;
+                left: 0;
+                box-shadow: 0px 0px 0px 0px #00000030;
+                position: fixed;
+				z-index: 1;
+                /* overflow-x: hidden; */
+                /* height: 100vh; */
+                transition: transform 400ms ease-in-out, box-shadow 400ms ease-in-out;
+                transform: translateY(100vh);
+            }
+            .card.left-menu.show {
+                transform: translateY(0vh);
+                box-shadow: 0px 0px 24px 0px #00000030;
+            }
+            .card.right-menu {
+                min-width: 15rem;
+                bottom: 0;
+                right: 0;
+                box-shadow: 0px 0px 0px 0px #00000030;
+                position: fixed;
+				z-index: 1;
+                transition: transform 400ms ease-in-out, box-shadow 400ms ease-in-out;
+                transform: translateY(100%);
+            }
+            .card.right-menu.show {
+                transform: translateY(0%);
+                box-shadow: 0px 0px 24px 0px #00000030;
+            }
+            .darker {
+                background: #00000030;
+                min-width: 3rem;
+            }
+			.small-title {
+				font-size: 12px;
+			}
+			.position-container {
+				background: #c300c3;
+				color: #fff;
+			}
+			.ground-speed-container {
+				background: #00c356;
+				color: #fff;
+			}
+			.altitude-container {
+				background: #ff3200;
+				color: #fff;
+			}
+			.game-screen-options {
+                max-width: 200px;
+				transition: max-height 200ms 100ms ease-in-out, margin 200ms 100ms ease-in-out;
+                overflow-y: hidden;
+                max-height: 500px;
+			}
+			.game-screen-options.hide {
+				/* transition: max-height 200ms 100ms ease-in-out, margin 200ms 100ms ease-in-out; */
+				transition: max-height 200ms ease-in-out, margin 200ms ease-in-out;
+                max-height: 0px;
+			}
+			.game-screen {
+				height: 100vh;
+				width: 100vw;
+				position: fixed;
+				z-index: 1101;
+				opacity: 1;
+				background: white;
+				transition: opacity 200ms ease-in-out;
+			}
+			.game-screen.hide {
+				opacity: 0;
+			}
+			.thrust-progress {
+				transition: none;
+				/* transition: width 0.2s ease; */
+			}
+			.text-white-alpha {
+				color: #ffffff90;
+			}
+		</style>
+		<script>
+		function clip(text) {
+	  		var copyElement = document.createElement('input');
+			copyElement.setAttribute('type', 'text');
+	  		copyElement.setAttribute('value', text);
+	  		copyElement = document.body.appendChild(copyElement);
+	  		copyElement.select();
+	  		document.execCommand('copy');
+	  		copyElement.remove();
+	  	}
+		function consoleLog(text) {
+			console.log(text);
+			$(".console-ticker").html(text);
+		}
+		function o_n(n) {
+			return parseFloat(Math.round(n*100)/100);
+		}
+		function _fcur(num) {
+			return formatMoney(parseFloat(num), 0);
+		}
+
+		function formatMoney(amount, decimalCount = 2, decimal = ".", thousands = ",") {
+		  try {
+			decimalCount = Math.abs(decimalCount);
+			decimalCount = isNaN(decimalCount) ? 2 : decimalCount;
+
+			const negativeSign = amount < 0 ? "-" : "";
+
+			let i = parseInt(amount = Math.abs(Number(amount) || 0).toFixed(decimalCount)).toString();
+			let j = (i.length > 3) ? i.length % 3 : 0;
+
+			return negativeSign + (j ? i.substr(0, j) + thousands : '') + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + thousands) + (decimalCount ? decimal + Math.abs(amount - i).toFixed(decimalCount).slice(2) : "");
+		  } catch (e) {
+			// console.log(e)
+		  }
+		};
+		</script>
+	</head>
+
+	<body>
+		<div class="game-screen d-flex flex-column align-items-center">
+			<div class="main-logo mb-2 mt-auto">
+				<i class="fas fa-helicopter fa-3x text-warning"></i>
+			</div>
+			<h3 class="mt-2">
+				Helicopter Simulator
+			</h3>
+			<div class="d-flex flex-row game-screen-options init-loading justify-content-center mt-3 w-100 text-black-50">
+	            <span class="loading mr-2">Loading</span>
+				<span>
+					<i class="fas fa-spinner fa-spin fa-fw fa-lg"></i>
+				</span>
+			</div>
+            <div class="input-group game-screen-options hide mb-auto">
+              <input type="text" class="form-control player-name" placeholder="Name" value="Newplayer">
+              <div class="input-group-append">
+                <button class="btn btn-outline-secondary join-game" type="button" id="button-addon2">Join</button>
+              </div>
+            </div>
+			<!-- <div class="d-flex flex-column game-screen-options hide init-join mb-auto align-items-center">
+	            <a href="#" class="rounded-0 border-0 btn btn-primary join-game m-1">Join</a>
+			</div> -->
+		</div>
+		<div class="loading-msg d-flex flex-column align-items-center">
+			<div class="loading-cog mb-1 mt-auto">
+				<i class="fas fa-cog fa-spin fa-3x"></i>
+			</div>
+			<h5 class="loading-num">
+				0%
+			</h5>
+			<div class="progress">
+				<div class="progress-bar progress-bar-striped progress-bar-animated loading-progress" role="progressbar" style="width: 0%;" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+			</div>
+			<h5 class="loading-text mb-auto mt-2">
+				Loading assets
+			</h5>
+		</div>
+        <div class="card left-menu d-flex flex-column rounded-0 align-items-center border-0 show">
+            <div class="d-flex flex-column left-panel-internal w-100 show flex-fill">
+                <div class="d-flex flex-column align-items-start">
+					<div class="progress w-100 rounded-0 bg-danger">
+						<div class="progress-bar progress-bar-striped progress-bar-animated thrust-progress rounded-0 bg-warning" role="progressbar" style="width: 50%;" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+					</div>
+					<span class="position-container d-flex align-content-stretch p-0 w-100">
+						<div class="d-flex flex-column align-content-start">
+							<span class="px-3 pt-1 pb-0 small text-white-alpha">Position</span>
+							<span class="px-3 pb-2 position-output"></span>
+						</div>
+						<i class="py-3 fas fa-location-arrow fa-fw ml-auto"></i>
+					</span>
+					<span class="ground-speed-container d-flex align-content-stretch p-0 w-100">
+						<div class="d-flex flex-column align-content-start">
+							<span class="px-3 pt-1 pb-0 small text-white-alpha">Ground speed</span>
+							<span class="px-3 pb-2 ground-speed-output"></span>
+						</div>
+						<i class="py-3 fas fa-tachometer-alt fa-fw ml-auto"></i>
+					</span>
+					<span class="altitude-container d-flex align-content-stretch p-0 w-100">
+						<div class="d-flex flex-column align-content-start">
+							<span class="px-3 pt-1 pb-0 small text-white-alpha">Altitude</span>
+							<span class="px-3 pb-2 altitude-output"></span>
+						</div>
+						<i class="py-3 fas fa-long-arrow-alt-up fa-fw ml-auto"></i>
+					</span>
+                </div>
+            </div>
+        </div>
+		<a href="#" class="btn rounded-0 border-0 open-menu p-0 d-flex align-content-stretch bg-primary text-white shadow">
+			<span class="p-3 global-type">Controls</span>
+			<i class="ml-3 py-3 fas fa-angle-up fa-fw ml-auto"></i>
+		</a>
+        <div class="card right-menu d-flex flex-column rounded-0 align-items-center border-0">
+            <div class="d-flex flex-column left-panel-internal w-100 show flex-fill p-3">
+                <div class="d-flex flex-column w-100">
+					<div class="d-flex">
+						<span class="mr-auto">Thrust:</span>
+						<span>spacebar</span>
+					</div>
+					<div class="d-flex">
+						<span class="mr-auto">Rotate left:</span>
+						<span>a</span>
+					</div>
+					<div class="d-flex">
+						<span class="mr-auto">Rotate right:</span>
+						<span>d</span>
+					</div>
+					<div class="d-flex">
+						<span class="mr-auto">Bank:</span>
+						<span>arrow keys</span>
+					</div>
+                </div>
+            </div>
+        </div>
+
+		<div id="container"></div>
+		<script defer src="/three/examples/js/libs/ammo.js"></script>
+
+		<script type="module">
+
+
+			const CapsuleGeometry = (radius = 1, height = 2, N = 32) => {
+			const geometry = new THREE.Geometry();
+			const TWOPI = Math.PI*2;
+
+			const PID2 = 1.570796326794896619231322;
+
+			const normals = [];
+
+			// top cap
+			for(let i = 0; i <= N/4; i++){
+				for(let j = 0; j <= N; j++){
+				let theta = j * TWOPI / N;
+				let phi = -PID2 + Math.PI * i / (N/2);
+				let vertex = new THREE.Vector3();
+				let normal = new THREE.Vector3();
+				vertex.x = radius * Math.cos(phi) * Math.cos(theta);
+				vertex.y = radius * Math.cos(phi) * Math.sin(theta);
+				vertex.z = radius * Math.sin(phi);
+				vertex.z -= height/2;
+				normal.x = vertex.x;
+				normal.y = vertex.y;
+				normal.z = vertex.z;
+				geometry.vertices.push(vertex);
+				normals.push(normal);
+				}
+			}
+
+			// bottom cap
+			for(let i = N/4; i <= N/2; i++){
+				for(let j = 0; j <= N; j++){
+				let theta = j * TWOPI / N;
+				let phi = -PID2 + Math.PI * i / (N/2);
+				let vertex = new THREE.Vector3();
+				let normal = new THREE.Vector3();
+				vertex.x = radius * Math.cos(phi) * Math.cos(theta);
+				vertex.y = radius * Math.cos(phi) * Math.sin(theta);
+				vertex.z = radius * Math.sin(phi);
+				vertex.z += height/2;
+				normal.x = vertex.x;
+				normal.y = vertex.y;
+				normal.z = vertex.z;
+				geometry.vertices.push(vertex);
+				normals.push(normal);
+				}
+			}
+
+			for(let i = 0; i <= N/2; i++){
+				for(let j = 0; j < N; j++){
+				let vec = new THREE.Vector4(
+					i         * ( N + 1 ) +   j       ,
+					i         * ( N + 1 ) + ( j + 1 ) ,
+					( i + 1 ) * ( N + 1 ) + ( j + 1 ) ,
+					( i + 1 ) * ( N + 1 ) +   j
+				);
+
+				if(i==N/4){
+					let face_1 = new THREE.Face3(vec.x,vec.y,vec.z,[ //ok
+					normals[vec.x],
+					normals[vec.y],
+					normals[vec.z]
+					]);
+
+					let face_2 = new THREE.Face3(vec.x,vec.z,vec.w,[
+					normals[vec.x],
+					normals[vec.z],
+					normals[vec.w]
+					]);
+
+					geometry.faces.push(face_2);
+					geometry.faces.push(face_1);
+				}else{
+					let face_1 = new THREE.Face3(vec.x,vec.y,vec.z,[
+					normals[vec.x],
+					normals[vec.y],
+					normals[vec.z]
+					]);
+
+					let face_2 = new THREE.Face3(vec.x,vec.z,vec.w,[
+					normals[vec.x],
+					normals[vec.z],
+					normals[vec.w]
+					]);
+
+					geometry.faces.push(face_1);
+					geometry.faces.push(face_2);
+				}
+				}
+			}
+
+			geometry.computeFaceNormals();
+			// geometry.computeVertexNormals();
+
+			return geometry;
+			}
+
+    		window.onload = (e) => {
+                join_screen_init();
+    		}
+
+            var ids = [];
+            var players = [];
+
+            var playerName = '';
+
+            var s_id, socket;
+
+            var player_geometry = new THREE.DodecahedronBufferGeometry(10, 1);
+
+            var player_material = new THREE.MeshPhysicalMaterial({ color: 0xffffff,  roughness: 1, metalness: 0, flatShading: true, side: THREE.DoubleSide });
+
+            var player_mesh = new THREE.Mesh( player_geometry, player_material );
+
+            var metalic_mat;
+            var metalic_mat2;
+            var leg_stand_mat;
+            var leg_material;
+
+            function newPlayer(id) {
+
+                var heli_y = new THREE.Group();
+                heli_y.add( helicopter.clone() );
+
+                var heli_x = new THREE.Group();
+                heli_x.add( heli_y );
+
+                var heli_z = new THREE.Group();
+                heli_z.add( heli_x );
+
+                heli_z.position.set(0, -500, 0);
+
+                scene.add(heli_z);
+
+                return heli_z;
+            }
+
+            function initiateDefaultSockets() {
+    	        socket = io();
+    	        socket.on('chat message', function(msg){
+                    var i = ids.indexOf(msg.id);
+                    if(players[i]!==undefined) {
+                        new TWEEN.Tween( players[i].position ).to( { x: msg.x, y: msg.y, z: msg.z }, 300).start();
+                        new TWEEN.Tween( players[i].rotation ).to( { y: msg.rot }, 300).start();
+                        new TWEEN.Tween( players[i].getObjectByName("chopper", true).rotation ).to( { x: msg.pitchx, z: msg.pitchz }, 300).start();
+                    }
+    	        });
+
+    	        socket.on('self id', function(id){
+                    s_id = id;
+                    socket.emit('sendname', playerName);
+    	        });
+
+    	        socket.on('player list', function(msg){
+                    ids = msg;
+                    ids.forEach((id) => {
+                        console.log("existing player created");
+                        players.push( newPlayer(id) );
+                    })
+    	        });
+
+                socket.on('new player name', function(name){
+                    console.log(name+" connected");
+                });
+
+                socket.on('new player', function(id){
+                    console.log("user connected: "+id);
+                    var np = newPlayer(id);
+                    players.push( np );
+                    ids.push( id );
+                });
+
+                socket.on('user disconnect', function(id){
+                    console.log("user disconnected: "+id);
+                    var i = ids.indexOf(id);
+                    players[i].visible = false;
+                    players.splice(i, 1);
+                    ids.splice(i, 1);
+                });
+            }
+
+            function initiateSockets() {
+    	        socket = io();
+    	        socket.on('chat message', function(msg){
+                    var i = ids.indexOf(msg.id);
+                    if(players[i]!==undefined) {
+                        new TWEEN.Tween( players[i].position ).to( { x: msg.x, y: msg.y, z: msg.z }, 50).start();
+                        new TWEEN.Tween( players[i].rotation ).to( { y: msg.rot }, 50).start();
+                        new TWEEN.Tween( players[i].getObjectByName("chopper", true).rotation ).to( { x: msg.pitchx, z: msg.pitchz }, 50).start();
+                    }
+    	        });
+
+    	        socket.on('self id', function(id){
+                    s_id = id;
+                    socket.emit('sendname', playerName);
+    	        });
+
+    	        socket.on('player list', function(msg){
+                    ids = msg;
+                    ids.forEach((id) => {
+                        console.log("existing player created");
+                        players.push( newPlayer(id) );
+                    })
+    	        });
+
+                socket.on('new player name', function(name){
+                    console.log(name+" connected");
+                });
+
+                socket.on('new player', function(id){
+                    console.log("user connected: "+id);
+                    var np = newPlayer(id);
+                    players.push( np );
+                    ids.push( id );
+                });
+
+                socket.on('user disconnect', function(id){
+                    console.log("user disconnected: "+id);
+                    var i = ids.indexOf(id);
+                    players[i].visible = false;
+                    players.splice(i, 1);
+                    ids.splice(i, 1);
+                });
+            }
+
+			var rotateChopper = 0, thrust = 0.5;
+
+			var heliDamp = false, pauseGame = false;
+
+			var groundSpeed = 0, prevGroundSpeed = 0;
+
+			let colGroupPlane = 1, colGroupRedBall = 2, colGroupGreenBall = 4, colGroupX = 1, colGroupY = 2
+			let physicsWorld, clock, rigidBodies = [], tmpTrans;
+
+			var helicopterRotationX, helicopterRotationY, helicopterRotationZ;
+
+			var altitude;
+
+			var camera, mainCamera, spectatorCamera, fakeCamera, scene, renderer, light, atmosphericLight, controls, spectatorControls;
+
+			let helicopterObject = null, moveDirection = { left: 0, right: 0, forward: 0, backward: 0, up: 0, rotate_left: 0, rotate_right: 0, down: 0 }
+			const STATE = { DISABLE_DEACTIVATION : 4 }
+
+			var lines = [];
+			var hovering = [];
+			var selected = [];
+			var updateLines = [];
+			var updateMode = false;
+
+			var defaultFont;
+
+			var helicopter;
+
+			var rayCaster = new THREE.Raycaster();
+			var mousePosition = new THREE.Vector2();
+
+            import Stats from '/three/examples/jsm/libs/stats.module.js';
+            import { GUI } from '/three/examples/jsm/libs/dat.gui.module.js';
+
+			import { OrbitControls } from '/three/examples/jsm/controls/OrbitControls.js';
+
+            function join_screen_init() {
+                $(".game-screen-options").toggleClass("hide mt-3");
+                setTimeout(function(){ $(".player-name").focus(); }, 200);
+				$("input.player-name").on("keyup", function(e) {
+					if(e.keyCode == 13) {
+						$(".join-game").click();
+					}
+				})
+                $(".join-game").on("click", function(){
+                    playerName = $(".player-name").val();
+                    if(playerName!=='') {
+    					$(".game-screen").addClass("hide");
+    					setTimeout(function(){
+    						$(".game-screen").remove();
+                            initiateSockets();
+                            loadAssets();
+    					}, 600);
+                    } else {
+                        alert("Please enter a name");
+                        $(".player-name").focus();
+                    }
+                })
+            }
+
+			var manager = new THREE.LoadingManager();
+
+			manager.onProgress = function ( url, itemsloaded=1, itemstotal=1 ) {
+
+					var percentComplete = 0;
+					if(itemstotal!=0) { percentComplete = itemsloaded / itemstotal * 100; }
+
+					console.log( Math.round( percentComplete, 2 ) + '%' );
+
+					$(".loading-progress").css("width", percentComplete+"%");
+					$(".loading-num").html(Math.round( percentComplete )+"%");
+
+			};
+
+			manager.onError = function ( url ) {
+
+				console.log( 'There was an error loading ' + url );
+
+			};
+
+			manager.onLoad = function () {
+
+				$(".loading-msg .loading-text").html("Initializing environment");
+				$(".loading-msg").addClass("initialising");
+				$(".loading-num").html("100%");
+				$(".loading-progress").css("width", 100+"%");
+
+				Ammo().then( init )
+
+			}
+
+			var fontLoader = new THREE.FontLoader(manager);
+            var textureLoader = new THREE.TextureLoader( manager );
+
+			var defaultFont;
+			var gridTexture;
+
+			var concreteTextures=[], roads=[], road_markings=[];
+
+            function loadAssets() {
+
+    			fontLoader.load( '/three/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+                    defaultFont = font;
+                } );
+    			gridTexture = textureLoader.load( '/textures/grid.jpg' );
+                concreteTextures.push( textureLoader.load( '/textures/rsz_concrete0-min.png' ) );
+                concreteTextures.push( textureLoader.load( '/textures/rsz_concrete1-min.png' ) );
+                concreteTextures.push( textureLoader.load( '/textures/rsz_concrete2-min.jpg' ) );
+                roads.push( textureLoader.load( '/textures/roads0-min.png' ) );
+                roads.push( textureLoader.load( '/textures/roads1-min.png' ) );
+                roads.push( textureLoader.load( '/textures/roads2-min.png' ) );
+                road_markings.push( textureLoader.load( '/textures/road_markings/2ln_g.png' ) );
+                road_markings.push( textureLoader.load( '/textures/road_markings/2lnh_g.png' ) );
+
+            }
+
+
+
+			// Kick-off renderer
+			var frameCount = 0;
+			function animate() {
+			  frameCount++;
+
+			  if(pauseGame) {
+				  return;
+			  }
+
+			 altitude = helicopterRotationZ.position.y-2.5;
+			  // if(frameCount>100) {
+			  // console.log(helicopterRotationY.getObjectByName("blades1", true));
+			  helicopterRotationY.getObjectByName("blades1", true).rotateY(thrust+0.05);
+			  helicopterRotationY.getObjectByName("blades2", true).rotateY(-thrust-0.02);
+			  helicopterRotationY.rotateY((Math.sin(frameCount/30)/600));
+
+			  players.forEach((heli) => {
+				  heli.getObjectByName("blades1", true).rotateY(0.5);
+				  heli.getObjectByName("blades2", true).rotateY(-0.5);
+				  heli.getObjectByName("chopper", true).rotateY((Math.sin(frameCount/30)/600));
+			  })
+
+		  // }
+			  // helicopter.position.y = (Math.sin(frameCount/100))+80;
+			  // Frame cycle
+			  // stats.update();
+			  let deltaTime = clock.getDelta();
+			  movehelicopter();
+			  updatePhysics( deltaTime );
+			  // controls.target = helicopterRotationZ.position;
+			  light.position.x = helicopterRotationZ.position.x;
+			  light.position.z = helicopterRotationZ.position.z;
+			  light.target.position.set(helicopterRotationZ.position.x, 0, helicopterRotationZ.position.z)
+			  // light.quaternion.copy( camera.quaternion );
+			  TWEEN.update();
+			  controls.update();
+			  spectatorControls.update();
+			  fakeCamera.lookAt(0, 10, 0);
+			  camera.copy(fakeCamera);
+			  // console.log(camera.position);
+			  renderer.render(scene, mainCamera);
+			  requestAnimationFrame(animate);
+			  if(frameCount % 9 == 0) {
+				  // console.log(moveDirection);
+				  // console.log(helicopterRotationZ.userData.physicsBody.linearVelocity);
+				  // console.log(helicopterRotationZ.prevPosition);
+				  // console.log(helicopterRotationZ.prevPosition);
+				  var d = new THREE.Vector3( helicopterRotationZ.position.x, 0, helicopterRotationZ.position.z ).distanceTo( helicopterRotationZ.prevPosition );
+				  // console.log(d);
+				  $(".position-output").html(_fcur(helicopterRotationZ.position.x)+", "+_fcur(helicopterRotationZ.position.z));
+				  $(".ground-speed-output").html(o_n(d*6)+"m/s");
+				  $(".altitude-output").html(o_n(altitude)+"m");
+				  helicopterRotationZ.prevPosition = new THREE.Vector3( helicopterRotationZ.position.x, 0, helicopterRotationZ.position.z );
+			  }
+			  // socket.io
+			  if(frameCount % 5 == 0) {
+				  socket.emit('chat message', {
+					  id: s_id,
+					  x: helicopterRotationZ.position.x,
+					  y: helicopterRotationZ.position.y,
+					  z: helicopterRotationZ.position.z,
+					  pitchx: helicopterRotationX.rotation.x,
+					  pitchz: helicopterRotationX.rotation.z,
+					  rot: helicopterRotationZ.rotation.y
+				  } );
+			  }
+		  }
+
+			function init() {
+
+				setTimeout(function(){
+					$(".loading-msg").addClass("hide");
+					setTimeout(function(){
+						$(".loading-msg").remove();
+					}, 600);
+				}, 1200);
+
+				clock = new THREE.Clock();
+
+				tmpTrans = new Ammo.btTransform();
+
+				setupEventHandlers();
+				setupPhysicsWorld();
+
+			    // Setup renderer
+			    renderer = new THREE.WebGLRenderer({ antialias: true });
+			    renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.shadowMap.enabled = true;
+			    document.getElementById('container').appendChild(renderer.domElement);
+
+			    // Setup scene
+			    scene = new THREE.Scene();
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.set(60, 100, 0);
+
+				spectatorCamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 2000 );
+				spectatorCamera.position.set(660, 800, 300);
+
+				mainCamera = camera;
+
+				scene.background = new THREE.Color( 0xcce0ff );
+				scene.fog = new THREE.Fog( 0xcce0ff, 2.00, 2000 );
+				// lights
+
+	            atmosphericLight = new THREE.HemisphereLight( 0x394552, 0xa39b84, 1 );
+
+				scene.add(atmosphericLight);
+
+				light = new THREE.DirectionalLight( 0xffffff, 0.7 );
+				light.position.set( 1000,3000,1000 );
+
+				scene.add( light.target );
+
+	            // var spotLightHelper = new THREE.DirectionalLightHelper( light );
+	            // scene.add( spotLightHelper );
+
+	            light.tweens = {};
+
+	            // shadows
+
+				light.castShadow = true;
+
+				light.shadow.mapSize.width = 1024*4;
+				light.shadow.mapSize.height = 1024*4;
+
+				var d = 200.0;
+
+				light.shadow.camera.left = - d;
+				light.shadow.camera.right = d;
+				light.shadow.camera.top = d;
+				light.shadow.camera.bottom = - d;
+
+				light.shadow.camera.far =3500.0;
+
+				scene.add( light );
+
+			    // Add camera controls
+                fakeCamera = camera.clone(); // parent becomes null
+				controls = new OrbitControls( fakeCamera, renderer.domElement );
+				controls.maxPolarAngle = Math.PI * 0.35;
+				controls.minPolarAngle = Math.PI * 0.35;
+				controls.minDistance = 30;
+				controls.maxDistance = 30;
+				controls.enabled = true;
+				controls.enablePan = false;
+				controls.enableKeys = false;
+				controls.autoRotate = false;
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.15;
+				controls.autoRotateSpeed = 1.5;
+
+				spectatorControls = new OrbitControls( spectatorCamera, renderer.domElement );
+				spectatorControls.maxPolarAngle = Math.PI * 0.35;
+				spectatorControls.minPolarAngle = Math.PI * 0.15;
+				spectatorControls.minDistance = 300;
+				spectatorControls.maxDistance = 600;
+				spectatorControls.enableKeys = false;
+				spectatorControls.enabled = false;
+				spectatorControls.enablePan = true;
+				spectatorControls.autoRotate = true;
+				spectatorControls.enableDamping = true;
+				spectatorControls.dampingFactor = 0.15;
+				spectatorControls.autoRotateSpeed = 2.5;
+
+				// helicopter
+
+				helicopter = new THREE.Group();
+
+				//helicopter cockpit
+				var shape = new THREE.Shape();
+				var x = 0;
+				var y = 0;
+				shape.moveTo(x, y);
+				shape.bezierCurveTo(x, y+5, x+5, y + 3, x + 5, y + 2);
+				shape.bezierCurveTo(x+5, y-3, x, y - 5, 0, 0);
+				// shape.bezierCurveTo(x + 5.5, y+5, x - 3, y + 8.5, 0, 0);
+				// shape.bezierCurveTo(x - 3, y + 7.5, x - 1.5, y + 7.7, x + 2.5, y + 5.5);
+				// shape.bezierCurveTo(x + 6, y + 5.7, x + 8, y + 8.5, x + 8, y + 4.5);
+
+				var fuse_shape = new THREE.Shape();
+				var x = 0;
+				var y = 0;
+				fuse_shape.moveTo(x, y);
+				fuse_shape.bezierCurveTo(x, y, x+5, y + 2, x + 10, y-1);
+				fuse_shape.bezierCurveTo(x+5, y-2, x, y - 2, 0, 0);
+				// shape.bezierCurveTo(x + 8, y + 3.5, x + 8, y, x + 5, y);
+				// shape.bezierCurveTo(x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5);
+
+				var cockpit_extrudeSettings = {
+				  steps:   1,
+				  depth:  1.0,
+				  bevelEnabled: true,
+				  bevelThickness: 6.00,
+				  bevelSize: 3.00,
+				  bevelSegments: 9,
+				};
+
+				var cockpit_w_extrudeSettings = {
+				  steps:   1,
+				  depth:  1.0,
+				  bevelEnabled: true,
+				  bevelThickness: 6.00,
+				  bevelSize: 3.00,
+				  bevelSegments: 3,
+				};
+
+				var fuse_extrudeSettings = {
+				  steps:   1,
+				  depth:  1.0,
+				  bevelEnabled: true,
+				  bevelThickness: 2.00,
+				  bevelSize: 2.00,
+				  bevelSegments: 6,
+				};
+
+				var cockpit_geometry = new THREE.ExtrudeBufferGeometry(shape, cockpit_extrudeSettings);
+				var cockpit_w_geometry = new THREE.ExtrudeBufferGeometry(shape, cockpit_w_extrudeSettings);
+				var cockpit_edge_geo = new THREE.EdgesGeometry(cockpit_w_geometry);
+				var fuse_geometry = new THREE.ExtrudeBufferGeometry(fuse_shape, fuse_extrudeSettings);
+
+				var radius = 10.0;
+				var widthSegments = 30;
+				var heightSegments =  6;
+				var phiStart = Math.PI * 0.00;
+				var phiLength = Math.PI * 0.06;
+				var thetaStart = Math.PI * 0.50;
+				var thetaLength = Math.PI * 0.05;
+				var blade_geo = new THREE.SphereBufferGeometry(
+				    radius,
+				    widthSegments, heightSegments,
+				    phiStart, phiLength,
+				    thetaStart, thetaLength);
+
+				var radius =  2;
+				var tubeRadius =  0.5;
+				var radialSegments =  7;
+				var tubularSegments =   5;
+				var ring_geo = new THREE.TorusBufferGeometry(
+				    radius, tubeRadius,
+				    radialSegments, tubularSegments);
+
+				var radiusTop =  0.2;
+				var radiusBottom =  0.2;
+				var height = 8.0;
+				var radialSegments = 10;
+				var blade_pole_geo = new THREE.CylinderBufferGeometry(
+				    radiusTop, radiusBottom, height, radialSegments);
+
+				var radius =  5.4;
+				var tubeRadius =  1.0;
+				var radialSegments = 20;
+				var tubularSegments = 100;
+				var p =  1;
+				var q =  7;
+				var tubes_geometry = new THREE.TorusKnotBufferGeometry(
+				    radius, tubeRadius, tubularSegments, radialSegments, p, q);
+
+				var radius =  1;
+				var tubeRadius =  4.2;
+				var radialSegments = 7;
+				var tubularSegments = 100;
+				var p =  2;
+				var q =  20;
+				var blade_base_geo = new THREE.TorusKnotBufferGeometry(
+				radius, tubeRadius, tubularSegments, radialSegments, p, q);
+
+				var radiusTop =  2;
+				var radiusBottom =  0.8;
+				var height = 30.0;
+				var radialSegments = 10;
+				var geometry = new THREE.CylinderBufferGeometry(
+				    radiusTop, radiusBottom, height, radialSegments);
+				var floor_geo = new THREE.PlaneBufferGeometry(2000, 2000);
+
+				var fus_material = new THREE.MeshPhysicalMaterial({
+					color: 0xffffff,
+					flatShading: true
+				})
+
+
+				var glass_material = new THREE.MeshPhysicalMaterial({
+					map: null,
+					color: 0xffffff,
+					metalness: 0,
+					roughness: 0,
+					opacity: 0.4,
+					transparent: true,
+					envMapIntensity: 20,
+					depthWrite: false,
+					premultipliedAlpha: true
+				})
+
+				var wireframe_mat = new THREE.MeshPhysicalMaterial({
+					wireframe: true
+				})
+
+				var edges_mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+				var ground_mat = new THREE.MeshPhongMaterial({
+					color: 0xeaeaea,
+					side: THREE.DoubleSide
+				})
+
+				metalic_mat = new THREE.MeshPhysicalMaterial({ color: 0xdf8600, roughness: 1, metalness: 0, side: THREE.DoubleSide });
+				metalic_mat2 = new THREE.MeshPhysicalMaterial({ color: 0x589aff,  roughness: 1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.7, flatShading: false, side: THREE.DoubleSide });
+				leg_stand_mat = new THREE.MeshPhysicalMaterial({ color: 0x545454,  roughness: 1, metalness: 0, flatShading: false, side: THREE.DoubleSide });
+				leg_material = new THREE.MeshPhysicalMaterial({ color: 0xdf8600, roughness: 1, metalness: 0, flatShading: false });
+
+				var cockpit = new THREE.Mesh( cockpit_geometry, glass_material );
+				cockpit.castShadow = true;
+				var cockpit_w = new THREE.LineSegments( cockpit_edge_geo, new THREE.LineBasicMaterial( { color: 0xffffff } ) );
+				var fuse = new THREE.Mesh( fuse_geometry, metalic_mat2 );
+				fuse.castShadow = true;
+				var ring = new THREE.Mesh( ring_geo, metalic_mat );
+				ring.castShadow = true;
+				var tubes = new THREE.Mesh( tubes_geometry, new THREE.MeshLambertMaterial({ color: 0xffffff }) );
+				tubes.castShadow = true;
+				var blade_pole = new THREE.Mesh( blade_pole_geo, metalic_mat2 );
+				blade_pole.castShadow = true;
+				var blade_base = new THREE.Mesh( blade_base_geo, metalic_mat );
+				blade_base.castShadow = true;
+				var blade = new THREE.Mesh( blade_geo, metalic_mat );
+				blade.castShadow = true;
+
+				var floor = new THREE.Mesh( floor_geo, ground_mat );
+
+				floor.castShadow = false;
+
+
+				floor.rotation.x = Math.PI/2;
+				floor.position.y = -8;
+
+				floor.receiveShadow = true;
+
+				// scene.add(floor);
+
+
+				var fuselage = new THREE.Mesh( geometry, metalic_mat2 );
+
+				var blade_pole_2 = blade_pole.clone();
+				var blade_pole_3 = blade_pole.clone();
+
+				fuselage.castShadow = true;
+				var fuselage_2 = fuselage.clone();
+
+				var fuse_2 = fuse.clone();
+
+				cockpit_w.scale.set(1.02,1.02,1.02);
+
+				var h_cockpit_g = new THREE.Group();
+				h_cockpit_g.add(cockpit);
+				h_cockpit_g.add(cockpit_w);
+
+				h_cockpit_g.position.set(-6,0,-0.5);
+
+
+				helicopter.add( h_cockpit_g );
+
+				ring.position.x = 31;
+
+				fuselage.rotation.z = Math.PI/2;
+				fuselage.position.x = 15;
+				fuse.rotation.y = -Math.PI/20;
+				fuse.position.x = 3;
+				fuse.position.y = 0.5;
+				fuse.position.z = -2.5;
+				fuse_2.rotation.y = Math.PI/20;
+				fuse_2.position.x = 3;
+				fuse_2.position.y = 0.5;
+				fuse_2.position.z = 1.5;
+
+				fuselage_2.rotation.z = Math.PI/2;
+				fuselage_2.position.x = 14;
+
+				fuselage_2.scale.set(1.2,0.3,1.2);
+				fuselage.scale.set(0.8,0.93,0.8);
+
+				fuselage_2.material = metalic_mat;
+
+				var h_fuse_g = new THREE.Group();
+				h_fuse_g.add( fuselage );
+				h_fuse_g.add( ring );
+				h_fuse_g.add( fuse );
+				h_fuse_g.add( fuse_2 );
+				h_fuse_g.add( fuselage_2 );
+
+
+				var h_tubes_g = new THREE.Group();
+				h_tubes_g.add( tubes );
+
+				tubes.rotation.x = Math.PI/2;
+				tubes.position.x = 7;
+				tubes.position.y = 3;
+
+				tubes.scale.set(0.3,0.3,0.3)
+
+				var single_blade = new THREE.Group();
+				single_blade.add( blade );
+
+				blade.scale.set(1,15,1);
+				blade.rotation.z = -Math.PI/2;
+				blade.position.z = -1;
+
+				single_blade.scale.set(1,1,0.6);
+				single_blade.rotation.y = Math.PI;
+
+				var all_blades = new THREE.Group();
+
+				var blade_2 = single_blade.clone();
+				blade_2.rotation.y = -Math.PI;
+
+				all_blades.add(single_blade);
+				all_blades.add(blade_2);
+				all_blades.position.x = 7;
+				all_blades.position.y = -1;
+
+				var all_blades_2 = all_blades.clone();
+				all_blades_2.rotation.y = Math.PI/2;
+
+                all_blades.name = 'blades1';
+                all_blades_2.name = 'blades2';
+
+				var h_blades_g = new THREE.Group();
+				h_blades_g.add( all_blades );
+				h_blades_g.add( all_blades_2 );
+				h_blades_g.add( blade_base );
+				h_blades_g.add( blade_pole );
+				h_blades_g.add( blade_pole_2 );
+				h_blades_g.add( blade_pole_3 );
+
+				blade_base.rotation.x = Math.PI/2;
+				blade_base.position.x = 7;
+				blade_base.position.y = 3.5;
+
+				blade_base.scale.set(0.3,0.3,0.6);
+
+				blade_pole.position.x = 7;
+				blade_pole.position.y = 5.5;
+
+				blade_pole_2.position.x = 7;
+				blade_pole_2.position.y = 9;
+
+				blade_pole_2.scale.set(1.2,0.1,1.2);
+
+				blade_pole_3.position.x = 7;
+				blade_pole_3.position.y = 6;
+
+				blade_pole_3.scale.set(1.5,0.3,1.5);
+
+				helicopter.add( h_fuse_g );
+				helicopter.add( h_blades_g );
+				helicopter.add( h_tubes_g );
+
+				var capsule_geo = CapsuleGeometry( 1, 25, 16);
+				var leg = new THREE.Mesh(capsule_geo, metalic_mat);
+				var leg_w_geo = new THREE.EdgesGeometry(capsule_geo);
+				leg.castShadow = true;
+				var leg_w = new THREE.LineSegments( leg_w_geo, new THREE.LineBasicMaterial( { color: 0xffffff } ) );
+				var h_leg = new THREE.Group();
+				h_leg.add(leg);
+				// h_leg.add(leg_w);
+				h_leg.rotation.y = Math.PI/2;
+
+				var h_leg_2 = h_leg.clone();
+
+				h_leg.position.z = 6;
+				h_leg_2.position.z = -6;
+
+				var legs_group = new THREE.Group();
+				legs_group.add( h_leg );
+				legs_group.add( h_leg_2 );
+
+				legs_group.position.y = -7;
+				legs_group.position.x = 8;
+
+				helicopter.add( legs_group );
+                helicopter.userData.blades = { blade1: all_blades, blade2: all_blades_2 };
+                helicopter.name = 'chopper';
+
+				var radius = 7.0;
+				var widthSegments =  1;
+				var heightSegments = 8;
+				var phiStart = Math.PI * 0.44;
+				var phiLength = Math.PI * 0.12;
+				var thetaStart = Math.PI * 0.15;
+				var thetaLength = Math.PI * 0.70;
+				var leg_stand_geo = new THREE.SphereBufferGeometry(
+				    radius,
+				    widthSegments, heightSegments,
+				    phiStart, phiLength,
+				    thetaStart, thetaLength);
+
+				var leg_stand = new THREE.Mesh( leg_stand_geo, leg_stand_mat );
+
+				leg_stand.castShadow = true;
+				leg_stand.rotation.x = -Math.PI/2;
+				leg_stand.scale.set(1,1,1.6);
+				leg_stand.position.y = -5;
+
+				var leg_stand_2 = leg_stand.clone();
+
+				leg_stand.position.x = 6;
+				leg_stand.rotation.y = -Math.PI/15;
+				leg_stand_2.position.x = -7;
+				leg_stand_2.rotation.y = Math.PI/13;
+
+				legs_group.add( leg_stand )
+				legs_group.add( leg_stand_2 )
+
+
+				helicopter.scale.set(0.3,0.3,0.3);
+
+				//helipad
+
+				var helipad = new THREE.Group();
+
+				var h_obj = //Base
+					new THREE.Mesh(
+						new THREE.TextBufferGeometry( 'H', {
+							font: defaultFont,
+							size: 20,
+							height: 0.025,
+							curveSegments: 3,
+							bevelEnabled: true,
+							bevelThickness: 0.02,
+							bevelSize: 0.03,
+							bevelOffset: 0,
+							bevelSegments: 2
+						} ),
+						new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0x828282 })
+					);
+					h_obj.castShadow = false;
+					h_obj.receiveShadow = true;
+					h_obj.rotation.x = Math.PI/2
+					h_obj.position.set(-8, 0.1, -10.5);
+				helipad.add( h_obj );
+
+				var innerRadius =  20;
+				var outerRadius =  21;
+				var thetaSegments = 30;
+				var o_geo = new THREE.RingBufferGeometry(
+				    innerRadius, outerRadius, thetaSegments);
+
+				var o_obj = new THREE.Mesh( o_geo, new THREE.MeshPhongMaterial( { color: 0xffffff, emissive: 0x828282, side: THREE.DoubleSide } ) );
+				o_obj.castShadow = false;
+				o_obj.receiveShadow = true;
+				o_obj.rotation.x = Math.PI/2
+				o_obj.position.set(0, 0.2, 0);
+				// o_obj.material.depthWrite = true;
+
+				helipad.add(o_obj);
+
+				scene.add(helipad);
+
+				// environment
+
+				// materials
+
+				var grass_material = new THREE.MeshLambertMaterial( { color: 0x00b025 } );
+				var dirt_material = new THREE.MeshLambertMaterial( { color: 0x9f5f00 } );
+				var concrete_material = new THREE.MeshLambertMaterial( { color: 0xd1d1d1 } );
+
+				var road_texture = roads[0].clone();
+				road_texture.needsUpdate = true;
+				road_texture.wrapT = THREE.RepeatWrapping;
+				road_texture.wrapS = THREE.RepeatWrapping;
+				road_texture.repeat.set( 1, 150 );
+				road_texture.offset.set(0.3,0.5);
+				var road_material = new THREE.MeshLambertMaterial( { map: road_texture } );
+
+				var road_markings_texture = road_markings[0].clone();
+				road_markings_texture.needsUpdate = true;
+				road_markings_texture.wrapT = THREE.RepeatWrapping;
+				road_markings_texture.wrapS = THREE.RepeatWrapping;
+				road_markings_texture.repeat.set( 1, 150 );
+				road_markings_texture.rotation = Math.PI/2;
+				// road_markings_texture.offset.set(0.3,0.5);
+				var road_markings_material = new THREE.MeshLambertMaterial( { map: road_markings_texture, opacity: 0.8, transparent: true } );
+
+				var road_path_texture = concreteTextures[1].clone();
+				road_path_texture.needsUpdate = true;
+				road_path_texture.wrapT = THREE.RepeatWrapping;
+				road_path_texture.wrapS = THREE.RepeatWrapping;
+				road_path_texture.repeat.set( 1000, 0.8 );
+				road_path_texture.offset.set(0,0.1);
+				var road_path_material = new THREE.MeshLambertMaterial( { map: road_path_texture, side: THREE.DoubleSide } );
+
+				var circle_geometry = new THREE.CircleBufferGeometry(1, 30);
+				var plane_geometry = new THREE.PlaneBufferGeometry(1, 1);
+
+				var helipad_base = new THREE.Mesh( circle_geometry, concrete_material );
+				helipad_base.scale.set(20.5, 20.5, 20.5);
+				helipad_base.rotation.x = -Math.PI/2;
+				helipad_base.position.set(0,0.1,0);
+				helipad_base.castShadow = false;
+				helipad_base.receiveShadow = true;
+				helipad.add( helipad_base );
+
+				var straight_road = new THREE.Mesh( plane_geometry, road_material );
+				straight_road.scale.set(4000, 30, 1);
+				straight_road.rotation.x = -Math.PI/2;
+				straight_road.position.set(0,0.1,110);
+				straight_road.castShadow = false;
+				straight_road.receiveShadow = true;
+				scene.add( straight_road );
+
+				var straight_road_markings = new THREE.Mesh( plane_geometry, road_markings_material );
+				straight_road_markings.scale.set(4000, 30, 1);
+				straight_road_markings.rotation.x = -Math.PI/2;
+				straight_road_markings.position.set(0,0.2,110);
+				straight_road_markings.castShadow = false;
+				straight_road_markings.receiveShadow = true;
+				scene.add( straight_road_markings );
+
+				var straight_road_path = new THREE.Mesh( plane_geometry, road_path_material );
+				straight_road_path.scale.set(4000, 7, 1);
+				straight_road_path.rotation.x = Math.PI/2;
+				straight_road_path.position.set(0,0.2,91.5);
+				straight_road_path.castShadow = false;
+				straight_road_path.receiveShadow = true;
+				scene.add( straight_road_path );
+
+				var straight_road_path_2 = straight_road_path.clone();
+				straight_road_path_2.position.set(0,0.2,128.5);
+				scene.add( straight_road_path_2 );
+
+				function newHelipad() {
+					return helipad.clone();
+				}
+
+				var helipads = [];
+				for(var n=0; n<4; n++) {
+					helipads.push( newHelipad() );
+				}
+
+				helipads[0].position.set(190, 120, 190);
+				helipads[1].position.set(-190, 150, 190);
+				helipads[2].position.set(-190, 110, -190);
+				helipads[3].position.set(190, 90, -190);
+
+				helipads.forEach((pad) => {
+					scene.add( pad );
+				})
+				// helicopter.position.x = -7
+				// helicopter.position.y = 80
+
+				helipad.position.set(0,90,0);
+
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				function onWindowResize() {
+
+					fakeCamera.aspect = window.innerWidth / window.innerHeight;
+					fakeCamera.updateProjectionMatrix();
+
+					camera.aspect = window.innerWidth / window.innerHeight;
+					camera.updateProjectionMatrix();
+
+					renderer.setSize( window.innerWidth, window.innerHeight );
+
+				}
+
+				gridTexture.repeat.set( 100,100 );
+				gridTexture.wrapT = THREE.RepeatWrapping;
+				gridTexture.wrapS = THREE.RepeatWrapping;
+                gridTexture.anisotropy = 16;
+
+				var ground = createBlock( new THREE.Vector3(0,-0.5,0), {x: 5000, y: 1, z: 5000}, new THREE.MeshPhongMaterial({ map: gridTexture, depthWrite: true }) );
+				var pad1 = createBlock( new THREE.Vector3(0,45,0), {x: 45, y: 90, z: 45}, new THREE.MeshLambertMaterial({ color: 0xdadada }) );
+				var pad2 = createBlock( new THREE.Vector3(190,60,190), {x: 45, y: 120, z: 45}, new THREE.MeshLambertMaterial({ color: 0xdadada }) );
+				var pad3 = createBlock( new THREE.Vector3(-190,75,190), {x: 45, y: 150, z: 45}, new THREE.MeshLambertMaterial({ color: 0xdadada }) );
+				var pad4 = createBlock( new THREE.Vector3(-190,55,-190), {x: 45, y: 110, z: 45}, new THREE.MeshLambertMaterial({ color: 0xdadada }) );
+				var pad5 = createBlock( new THREE.Vector3(190,45,-190), {x: 45, y: 90, z: 45}, new THREE.MeshLambertMaterial({ color: 0xdadada }) );
+
+				createHelicopter();
+
+				animate();
+
+                $(".open-menu").on("click", function() {
+                    var b = $(".open-menu");
+                    $(".right-menu").toggleClass("show");
+                    b.toggleClass("hide");
+                });
+                $(".menu-down").on("click", function(e) {
+                    if (!e) var e = window.event;
+                	e.cancelBubble = true;
+                	if (e.stopPropagation) e.stopPropagation();
+                    var b = $(".open-menu");
+                    $(".right-menu").toggleClass("show");
+                    b.toggleClass("hide");
+                });
+			}
+
+			function createHelicopter(pos={x: 0, y: 90, z: 0}){
+
+				let scale = {x: 10, y: 1, z: 1};
+				let size = {x: 30, y: 5, z: 30};
+			    let quat = {x: 0, y: 0, z: 0, w: 1};
+			    let mass = 10;
+
+			    //threeJS Section
+			    // helicopter.scale.set(scale.x, scale.y, scale.z);
+
+				helicopterRotationY = new THREE.Group();
+				helicopterRotationY.add( helicopter.clone() );
+
+				helicopterRotationX = new THREE.Group();
+				helicopterRotationX.add( helicopterRotationY );
+
+				helicopterRotationZ = new THREE.Group();
+				helicopterRotationZ.add( helicopterRotationX );
+
+			    helicopterRotationZ.position.set(pos.x, pos.y, pos.z);
+
+                helicopterRotationZ.add( camera );
+
+                scene.add(helicopterRotationZ);
+
+				helicopterRotationZ.prevPosition = helicopterRotationZ.position;
+
+			    //Ammojs Section
+			    let transform = new Ammo.btTransform();
+			    transform.setIdentity();
+			    transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			    let motionState = new Ammo.btDefaultMotionState( transform );
+
+				let colShape = new Ammo.btSphereShape( size.y * 0.5 );
+			    colShape.setMargin( 0.05 );
+
+			    let localInertia = new Ammo.btVector3( 0, 0, 0 );
+			    colShape.calculateLocalInertia( mass, localInertia );
+
+			    let rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, colShape, localInertia );
+			    let body = new Ammo.btRigidBody( rbInfo );
+
+				body.setFriction(1000);
+				// body.setRollingFriction(10);
+				// body.setRestitution(0.2);
+				body.setDamping(0.1,0.1);
+				body.setActivationState( STATE.DISABLE_DEACTIVATION );
+
+				body.linearVelocity = body.getLinearVelocity();
+
+			    physicsWorld.addRigidBody( body, colGroupY, colGroupPlane );
+			    helicopterRotationZ.userData.physicsBody = body;
+			    rigidBodies.push(helicopterRotationZ);
+
+			}
+
+			var targetRotation = {
+				x: 0.3,
+				z: 0.3
+			}
+
+			function movehelicopter(){
+
+
+			    let scalingFactor = 3;
+
+			    let moveX =  moveDirection.backward - moveDirection.forward;
+				let moveY =  moveDirection.up;
+				let moveZ =  moveDirection.left - moveDirection.right;
+			    let rot =  moveDirection.rotate_left - moveDirection.rotate_right;
+
+
+				if(moveY==1) {
+					if(thrust<1) {
+						thrust += 0.02;
+						$(".thrust-progress").css("width", thrust*100+"%");
+					}
+				} else {
+					if(thrust>0) {
+						thrust -= 0.01;
+						$(".thrust-progress").css("width", thrust*100+"%");
+					}
+				}
+
+				let physicsBody = helicopterRotationZ.userData.physicsBody;
+                // console.log(thrust);
+
+				if(altitude<0.1) {
+					if(!heliDamp) {
+						physicsBody.setDamping(0.4, 0.4);
+						heliDamp = true;
+					}
+				} else {
+					if(heliDamp) {
+						physicsBody.setDamping(0.1, 0.1);
+						heliDamp = false;
+					}
+				}
+
+				if(rot!=0 && altitude>0.2) {
+					if(rot==1 && rotateChopper<0.03) {
+						rotateChopper += 0.001;
+					}
+					if(rot==-1 && rotateChopper>-0.03) {
+						rotateChopper -= 0.001;
+					}
+				} else {
+					if(rotateChopper>0.0005) {
+						rotateChopper -= 0.0005;
+					} else if(rotateChopper<-0.0005) {
+						rotateChopper += 0.0005;
+					} else {
+                        rotateChopper = 0;
+                    }
+				}
+
+				if(rotateChopper!==0) {
+					// console.log(rotateChopper);
+					helicopterRotationZ.rotation.y += rotateChopper;
+				}
+
+                var xrot = helicopterRotationX.rotation.x
+
+                var zrot = helicopterRotationX.rotation.z
+
+				if(altitude>0.2) {
+
+					if(moveX<0) {
+						if(helicopterRotationX.rotation.z<0.3) {
+							helicopterRotationX.rotation.z +=0.01;
+						}
+					}
+
+					if(moveX>0) {
+						if(helicopterRotationX.rotation.z>-0.3) {
+							helicopterRotationX.rotation.z +=-0.01;
+						}
+					}
+
+				} else {
+					moveX = 0;
+				}
+
+				if(moveX==0) {
+					if(helicopterRotationX.rotation.z<-0.015) {
+						helicopterRotationX.rotation.z +=0.01;
+					} else if(helicopterRotationX.rotation.z>0.015) {
+						helicopterRotationX.rotation.z +=-0.01;
+					} else {
+						helicopterRotationX.rotation.z = 0;
+					}
+				}
+
+				if(altitude>0.2) {
+
+					if(moveZ>0) {
+						if(helicopterRotationX.rotation.x<0.3) {
+							helicopterRotationX.rotation.x += 0.01;
+						}
+					}
+
+					if(moveZ<0) {
+						if(helicopterRotationX.rotation.x>-0.3) {
+							helicopterRotationX.rotation.x += -0.01;
+						}
+					}
+
+				} else {
+
+					moveZ = 0;
+
+				}
+
+				if(moveZ==0) {
+					if(helicopterRotationX.rotation.x<-0.015) {
+						helicopterRotationX.rotation.x += 0.01;
+					} else if(helicopterRotationX.rotation.x>0.015) {
+						helicopterRotationX.rotation.x += -0.01;
+					} else {
+						helicopterRotationX.rotation.x = 0;
+					}
+				}
+
+                // thrust calculations
+
+				xrot = o_n(xrot);
+				zrot = o_n(zrot);
+
+
+				moveX = -zrot*thrust*2;
+				moveZ = xrot*thrust*2;
+
+
+				xrot = Math.abs(xrot);
+				zrot = Math.abs(zrot);
+
+				var h_a = (xrot > zrot) ? xrot : zrot;
+
+				moveY = (1-h_a*1.2)*thrust;
+
+				var a = helicopterRotationZ.rotation.y;
+
+				var x = Math.cos(a)*moveX+Math.sin(a)*moveZ;
+				var z = Math.sin(-a)*moveX+Math.cos(-a)*moveZ;
+
+			    if( moveX == 0 && moveY == 0 && moveZ == 0) {
+
+				} else {
+                    // console.log("x: "+_fcur(x)+", y: "+moveY+", z: "+_fcur(z));
+					let resultantImpulse = new Ammo.btVector3( x, moveY, z )
+				    resultantImpulse.op_mul(scalingFactor);
+
+				    physicsBody.applyCentralImpulse( resultantImpulse );
+
+				}
+
+			}
+
+           function setTexture(tx={}) {
+
+                if(tx.texture!==undefined) {
+                    var texture = tx.texture.clone();
+                } else {
+                    var texture = new THREE.Texture();
+                }
+
+                if(tx.offsetx!=undefined && tx.offsety!=undefined) {
+                    texture.offset.set(tx.offsetx,tx.offsety);
+                }
+
+                if(tx.reptx!=undefined && tx.repty!=undefined) {
+                    texture.repeat.set( tx.reptx, tx.repty );
+                }
+
+                if(tx.anisotropy!=undefined) {
+                    texture.anisotropy = tx.anisotropy;
+                }
+                texture.wrapT = THREE.RepeatWrapping;
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.needsUpdate = true;
+
+                return texture;
+
+            }
+
+			function createBlock(pos, scale, material){
+			    let quat = {x: 0, y: 0, z: 0, w: 1};
+			    let mass = 0;
+
+			    //threeJS Section
+			    let blockPlane = new THREE.Mesh(new THREE.BoxBufferGeometry(), material);
+
+			    blockPlane.position.set(pos.x, pos.y, pos.z);
+			    blockPlane.scale.set(scale.x, scale.y, scale.z);
+
+			    blockPlane.castShadow = true;
+			    blockPlane.receiveShadow = true;
+
+			    scene.add(blockPlane);
+
+
+			    //Ammojs Section
+			    let transform = new Ammo.btTransform();
+			    transform.setIdentity();
+			    transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			    let motionState = new Ammo.btDefaultMotionState( transform );
+
+			    let colShape = new Ammo.btBoxShape( new Ammo.btVector3( scale.x * 0.5, scale.y * 0.5, scale.z * 0.5 ) );
+			    colShape.setMargin( 0.05 );
+
+			    let localInertia = new Ammo.btVector3( 0, 0, 0 );
+			    colShape.calculateLocalInertia( mass, localInertia );
+
+			    let rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, colShape, localInertia );
+			    let body = new Ammo.btRigidBody( rbInfo );
+				body.setFriction(4000);
+				body.setRollingFriction(500);
+
+			    physicsWorld.addRigidBody( body, colGroupPlane, colGroupX | colGroupY );
+
+				return blockPlane;
+			}
+
+
+			function createBall(){
+
+			    let pos = {x: 0, y: 20, z: 0};
+			    let radius = 2;
+			    let quat = {x: 0, y: 0, z: 0, w: 1};
+			    let mass = 1;
+
+			    //threeJS Section
+			    let ball = new THREE.Mesh(new THREE.SphereBufferGeometry(radius), new THREE.MeshPhongMaterial({color: 0xff0505}));
+
+			    ball.position.set(pos.x, pos.y, pos.z);
+
+			    ball.castShadow = true;
+			    ball.receiveShadow = true;
+
+			    scene.add(ball);
+
+
+			    //Ammojs Section
+			    let transform = new Ammo.btTransform();
+			    transform.setIdentity();
+			    transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			    let motionState = new Ammo.btDefaultMotionState( transform );
+
+			    let colShape = new Ammo.btSphereShape( radius );
+			    colShape.setMargin( 0.05 );
+
+			    let localInertia = new Ammo.btVector3( 0, 0, 0 );
+			    colShape.calculateLocalInertia( mass, localInertia );
+
+			    let rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, colShape, localInertia );
+			    let body = new Ammo.btRigidBody( rbInfo );
+
+
+			    physicsWorld.addRigidBody( body, colGroupRedBall, colGroupPlane | colGroupGreenBall );
+
+			    ball.userData.physicsBody = body;
+			    rigidBodies.push(ball);
+			}
+			function createMaskBall(){
+
+			    let pos = {x: 1, y: 30, z: 0};
+			    let radius = 2;
+			    let quat = {x: 0, y: 0, z: 0, w: 1};
+			    let mass = 1;
+
+			    //threeJS Section
+			    let ball = new THREE.Mesh(new THREE.SphereBufferGeometry(radius), new THREE.MeshPhongMaterial({color: 0x00ff08}));
+
+			    ball.position.set(pos.x, pos.y, pos.z);
+
+			    ball.castShadow = true;
+			    ball.receiveShadow = true;
+
+			    scene.add(ball);
+
+
+			    //Ammojs Section
+			    let transform = new Ammo.btTransform();
+			    transform.setIdentity();
+			    transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			    let motionState = new Ammo.btDefaultMotionState( transform );
+
+			    let colShape = new Ammo.btSphereShape( radius );
+			    colShape.setMargin( 0.05 );
+
+			    let localInertia = new Ammo.btVector3( 0, 0, 0 );
+			    colShape.calculateLocalInertia( mass, localInertia );
+
+			    let rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, colShape, localInertia );
+			    let body = new Ammo.btRigidBody( rbInfo );
+
+
+			    physicsWorld.addRigidBody( body, colGroupGreenBall, colGroupPlane | colGroupRedBall);
+
+			    ball.userData.physicsBody = body;
+			    rigidBodies.push(ball);
+			}
+			function createJointObjects(){
+
+				let y = Math.random()*30;
+			    let pos1 = {x: -1, y: 15+y, z: 0};
+			    let pos2 = {x: -1, y: 10+y, z: 0};
+
+			    let radius = 2;
+			    let scale = {x: 5, y: 2, z: 2};
+			    let quat = {x: 0, y: 0, z: 0, w: 1};
+			    let mass1 = 2;
+			    let mass2 = 1;
+
+			    let transform = new Ammo.btTransform();
+
+			    //Sphere Graphics
+			    let ball = new THREE.Mesh(new THREE.SphereBufferGeometry(radius), new THREE.MeshPhongMaterial({color: 0xb846db}));
+
+			    ball.position.set(pos1.x, pos1.y, pos1.z);
+
+			    ball.castShadow = true;
+			    ball.receiveShadow = true;
+
+			    scene.add(ball);
+
+
+			    //Sphere Physics
+			    transform.setIdentity();
+			    transform.setOrigin( new Ammo.btVector3( pos1.x, pos1.y, pos1.z ) );
+			    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			    let motionState = new Ammo.btDefaultMotionState( transform );
+
+			    let sphereColShape = new Ammo.btSphereShape( radius );
+			    sphereColShape.setMargin( 0.05 );
+
+			    let localInertia = new Ammo.btVector3( 0, 0, 0 );
+			    sphereColShape.calculateLocalInertia( mass1, localInertia );
+
+			    let rbInfo = new Ammo.btRigidBodyConstructionInfo( mass1, motionState, sphereColShape, localInertia );
+			    let sphereBody = new Ammo.btRigidBody( rbInfo );
+
+			    physicsWorld.addRigidBody( sphereBody, colGroupY, colGroupY | colGroupPlane | colGroupRedBall );
+
+			    ball.userData.physicsBody = sphereBody;
+			    rigidBodies.push(ball);
+
+
+			    //Block Graphics
+			    let block = new THREE.Mesh(new THREE.BoxBufferGeometry(), new THREE.MeshPhongMaterial({color: 0xf78a1d}));
+
+			    block.position.set(pos2.x, pos2.y, pos2.z);
+			    block.scale.set(scale.x, scale.y, scale.z);
+
+			    block.castShadow = true;
+			    block.receiveShadow = true;
+
+			    scene.add(block);
+
+			    //Block Physics
+			    transform.setIdentity();
+			    transform.setOrigin( new Ammo.btVector3( pos2.x, pos2.y, pos2.z ) );
+			    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			    motionState = new Ammo.btDefaultMotionState( transform );
+
+			    let blockColShape = new Ammo.btBoxShape( new Ammo.btVector3( scale.x * 0.5, scale.y * 0.5, scale.z * 0.5 ) );
+			    blockColShape.setMargin( 0.05 );
+
+			    localInertia = new Ammo.btVector3( 0, 0, 0 );
+			    blockColShape.calculateLocalInertia( mass2, localInertia );
+
+			    rbInfo = new Ammo.btRigidBodyConstructionInfo( mass2, motionState, blockColShape, localInertia );
+			    let blockBody = new Ammo.btRigidBody( rbInfo );
+
+			    physicsWorld.addRigidBody( blockBody, colGroupX, colGroupX | colGroupPlane | colGroupRedBall );
+
+			    block.userData.physicsBody = blockBody;
+			    rigidBodies.push(block);
+
+				let spherePivot = {
+					p1: new Ammo.btVector3( 0, - radius, 0 ),
+					p2: new Ammo.btVector3( 0, - radius, 5 )
+				};
+				let blockPivot = {
+					p1: new Ammo.btVector3( - scale.x * 0.5, 1, 1 ),
+					p2: new Ammo.btVector3( - scale.z * 0.5, 1, 1 )
+				};
+
+				let p2p = [];
+				p2p.push( new Ammo.btHingeConstraint( sphereBody, blockBody, spherePivot.p1, blockPivot.p1) );
+				p2p.forEach((c) => {
+					physicsWorld.addConstraint( c, false );
+				});
+
+			}
+
+
+			function updatePhysics( deltaTime ){
+
+			    // Step world
+			    physicsWorld.stepSimulation( deltaTime, 10 );
+
+			    // Update rigid bodies
+			    for ( let i = 0; i < rigidBodies.length; i++ ) {
+			        let objThree = rigidBodies[ i ];
+			        let objAmmo = objThree.userData.physicsBody;
+			        let ms = objAmmo.getMotionState();
+			        if ( ms ) {
+
+			            ms.getWorldTransform( tmpTrans );
+			            let p = tmpTrans.getOrigin();
+			            let q = tmpTrans.getRotation();
+			            objThree.position.set( p.x(), p.y(), p.z() );
+			            // objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+			        }
+			    }
+
+			}
+
+			function setupPhysicsWorld(){
+
+			    let collisionConfiguration  = new Ammo.btDefaultCollisionConfiguration(),
+			        dispatcher              = new Ammo.btCollisionDispatcher(collisionConfiguration),
+			        overlappingPairCache    = new Ammo.btDbvtBroadphase(),
+			        solver                  = new Ammo.btSequentialImpulseConstraintSolver();
+
+			    physicsWorld           = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+			    physicsWorld.setGravity(new Ammo.btVector3(0, -12, 0));
+
+			}
+
+			function setupEventHandlers(){
+
+			    window.addEventListener( 'keydown', handleKeyDown, false);
+			    window.addEventListener( 'keyup', handleKeyUp, false);
+
+			}
+
+
+			function handleKeyDown(event){
+
+			    let keyCode = event.keyCode;
+
+			    switch(keyCode){
+
+					case 80: //p: pause
+						pauseGame = !pauseGame;
+						animate();
+						break;
+
+					case 67: //c: toggle camera
+						mainCamera = (mainCamera==camera) ? spectatorCamera : camera;
+						controls.enabled = !controls.enabled;
+						spectatorControls.enabled = !spectatorControls.enabled;
+						break;
+
+					case 17: //ctrl: release thrust
+						moveDirection.down = 1
+						break;
+
+					case 65: //A: Rotate left
+						moveDirection.rotate_left = 1
+						break;
+
+					case 68: //D: Rotate right
+						moveDirection.rotate_right = 1
+						break;
+
+					case 32: //SPACEBAR: Up
+						moveDirection.up = 1
+						break;
+
+					case 37: //LEFT arrow: Left
+						moveDirection.left = 1
+						break;
+
+			        case 39: //RIGHT arrow: Right
+			            moveDirection.right = 1
+			            break;
+
+			        case 40: //DOWN arrow: Backward
+			            moveDirection.backward = 1
+			            break;
+
+			        case 38: //UP arrow: Forward
+			            moveDirection.forward = 1
+			            break;
+
+			    }
+			}
+
+
+			function handleKeyUp(event){
+			    let keyCode = event.keyCode;
+
+			    switch(keyCode){
+
+					case 17: //ctrl: release thrust
+						moveDirection.down = 0
+						break;
+
+					case 65: //A: Rotate left
+						moveDirection.rotate_left = 0
+						break;
+
+					case 68: //D: Rotate right
+						moveDirection.rotate_right = 0
+						break;
+
+					case 32: //SPACEBAR: Up
+						moveDirection.up = 0
+						break;
+
+					case 37: //LEFT arrow: Left
+						moveDirection.left = 0
+						break;
+
+			        case 39: //RIGHT arrow: Right
+			            moveDirection.right = 0
+			            break;
+
+			        case 40: //DOWN arrow: Backward
+			            moveDirection.backward = 0
+			            break;
+
+			        case 38: //UP arrow: Forward
+			            moveDirection.forward = 0
+			            break;
+
+			    }
+
+			}
+
+			$("body").on("touchstart", function(){
+				moveDirection.up = 1;
+			});
+
+			$("body").on("touchend", function(){
+				moveDirection.up = 0;
+			});
+  		</script>
+	</body>
+</html>
