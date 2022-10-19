@@ -1,9 +1,6 @@
 name: Build and deploy
 
-on:
-  push:
-    tags:
-      - 'deploy'
+on: push
 
 jobs:
   build:
@@ -42,5 +39,5 @@ jobs:
         script: |
           rm -rf /var/www/${{ env.FOLDER }}-ci
           mkdir /var/www/${{ env.FOLDER }}-ci
-          rsync -av /var/www/${{ env.FOLDER }}-ci-tmp/www/ /var/www/${{ env.FOLDER }}-ci
+          rsync -av /var/www/${{ env.FOLDER }}-ci-tmp/ /var/www/${{ env.FOLDER }}-ci
           rm -rf /var/www/${{ env.FOLDER }}-ci-tmp
