@@ -360,6 +360,7 @@
 
 		<script type="module">
 
+			window.thrustMultiplier = 1;
 
 			const CapsuleGeometry = (radius = 1, height = 2, N = 32) => {
 			const geometry = new THREE.Geometry();
@@ -1596,7 +1597,7 @@
 
 				var h_a = (xrot > zrot) ? xrot : zrot;
 
-				moveY = (1-h_a*1.2)*thrust;
+				moveY = (1-h_a*1.2)*thrust*window.thrustMultiplier;
 
 				var a = helicopterRotationZ.rotation.y;
 
