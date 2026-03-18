@@ -1,17 +1,37 @@
 {
   "name": "helicopter-simulator",
-  "version": "0.0.1",
-  "main": "bin/index.js",
+  "version": "1.0.0",
   "description": "Multiplayer helicopter simulator",
-  "dependencies": {
-    "bootstrap": "^4.4.1",
-    "express": "^4.15.2",
-    "jquery": "^3.5.0",
-    "nodemon": "^2.0.3",
-    "socket.io": "^1.7.3",
-    "three": "^0.115.0"
+  "private": true,
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
-    "start": "node index.js"
+    "dev": "concurrently -n client,server -c green,blue \"vite\" \"tsx watch server/server.ts\"",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "start": "node dist-server/server/server.js",
+    "test": "npm run build && vitest run",
+    "test:ci": "vitest run"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.2",
+    "express": "^5.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vitest": "^3.2.4"
   }
 }
